@@ -54,20 +54,59 @@ class DioWrapper {
 
   /// DIO GET
   /// take [url], concrete route
-  Future<Response> get(String url, {Map<String, dynamic>? params}) async =>
-      await dio
-          .get(url, queryParameters: params)
-          .then((response) => response)
-          .catchError((error) {
-        handleError(error, _decoder);
-      });
+  Future<Response> get(String url,
+      {Map<String, dynamic>? params, Map<String, dynamic>? headers}) async {
+    if (headers != null) {
+      dio.options?.headers.addAll(headers);
+    }
+    return await dio
+        .get(url, queryParameters: params)
+        .then((response) => response)
+        .catchError((error) {
+      handleError(error, _decoder);
+    });
+  }
 
   /// DIO POST
   /// take [url], concrete route
-  Future<Response> post(String url, {body}) async =>
-      await dio.post(url, data: body).then((response) {
-        return response;
-      }).catchError((error) {
-        handleError(error, _decoder);
-      });
+  Future<Response> post(String url,
+      {body, Map<String, dynamic>? headers}) async {
+    if (headers != null) {
+      dio.options?.headers.addAll(headers);
+    }
+    return await dio.post(url, data: body).then((response) {
+      return response;
+    }).catchError((error) {
+      handleError(error, _decoder);
+    });
+  }
+
+  /// DIO PATH
+  ///
+  Future<Response> patch(String url,
+      {body, Map<String, dynamic>? headers}) async {
+    if (headers != null) {
+      dio.options?.headers.addAll(headers);
+    }
+    return await dio.patch(url, data: body).then((response) {
+      return response;
+    }).catchError((error) {
+      handleError(error, _decoder);
+    });
+  }
+
+  /// DIO DELETE
+  ///
+  Future<Response> delete(String url,
+      {Map<String, dynamic>? params, Map<String, dynamic>? headers}) async {
+    if (headers != null) {
+      dio.options?.headers.addAll(headers);
+    }
+    return await dio
+        .delete(url, queryParameters: params)
+        .then((response) => response)
+        .catchError((error) {
+      handleError(error, _decoder);
+    });
+  }
 }

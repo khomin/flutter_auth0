@@ -3,6 +3,7 @@ part of auth0;
 class Auth0Client {
   final DioWrapper _dioWrapper = DioWrapper();
   final String clientId;
+  final String clientSecret;
   final String domain;
 
   final int connectTimeout;
@@ -12,6 +13,7 @@ class Auth0Client {
 
   Auth0Client(
       {required this.clientId,
+      required this.clientSecret,
       required this.domain,
       required String accessToken,
       required this.connectTimeout,
@@ -55,7 +57,6 @@ class Auth0Client {
   }
 
   /// Performs Auth with user credentials using the Password Realm Grant
-  /// [clientSecret] is a secret key from auth0 account.
   /// [params] to send realm parameters
   /// @param [String] params.username user's username or email
   /// @param [String] params.password user's password
@@ -64,14 +65,13 @@ class Auth0Client {
   /// @param [String] - [params.scope] scopes requested for the issued tokens. e.g. openid profile
   /// @returns a [Future] with [Auth0User]
   /// [ref link]: https://auth0.com/docs/api-auth/grant/password#realm-support
-  Future<Auth0User> passwordGrant(
-      Map<String, String> params, String clientSecret) async {
+  Future<Auth0User> passwordGrant(Map<String, String> params) async {
     assert(params['username'] != null && params['password'] != null);
 
     var payload = {
       ...params,
       'client_id': this.clientId,
-      'client_secret': clientSecret,
+      'client_secret': this.clientSecret,
       'grant_type': params['realm'] != null
           ? 'http://auth0.com/oauth/grant-type/password-realm'
           : 'password'
@@ -107,20 +107,16 @@ class Auth0Client {
 
   /// Performs sending sms code on phone number
   /// [params] to send parameters
-  /// [connectionType] connection type to use, possible values: "sms", "email", defaults to sms
-  /// [connectionType] send code type to use, possible: "code", "link", defaults to code
-  /// @param [String] params.phone_number user's phone number (if using phone)
-  /// @param [String] params.email user's email address (is using email)
+  /// @param [String] params.phone_number user's phone number
   /// @returns a [Future] with [bool]
-  Future<bool> sendOtpCode(dynamic params,
-      [String? connectionType, String? send]) async {
+  Future<bool> sendOtpCode(dynamic params) async {
     assert(params['phone_number'] != null || params['email'] != null);
-
+    assert(params['connection'] != null);
     var payload = Map.from(params)
       ..addAll({
         'client_id': this.clientId,
-        'connection': connectionType ?? "sms",
-        'send': send ?? "code",
+        'connection': params['connection'],
+        'send': "code",
         "authParams": {"scope": "offline_access", "grant_type": "refresh_token"}
       });
 
@@ -130,20 +126,36 @@ class Auth0Client {
 
   /// Performs verification of phone number
   /// [params] to send parameters
-  /// [realm] realm for authentication, possible values: "sms", "email", defaults to sms
-  /// @param [String] params.otp - code form sms/email
-  /// @param [String] params.username - users phone is sms realm or email, if email realm is being used
+  /// @param [String] params.otp - code form sms or @param [String] params.username
   /// @returns a [Future] with [Auth0User]
-  Future<Auth0User> verifyOTP(dynamic params, [String? realm]) async {
+  Future<Auth0User> verifyWithOTP(dynamic params) async {
     assert(params['username'] != null && params['otp'] != null);
-
     var payload = Map.from(params)
       ..addAll({
         'client_id': this.clientId,
-        'realm': realm ?? "sms",
+        'realm': params['connection'],
+        'client_secret': this.clientSecret,
         'grant_type': 'http://auth0.com/oauth/grant-type/passwordless/otp',
       });
 
+    Response res = await _dioWrapper.post('/oauth/token', body: payload);
+    Auth0User user = Auth0User.fromMap(res.data);
+    return user;
+  }
+
+  Future<Auth0User> verifyWithMfa(
+      {required String mfaToken,
+      required String oobCode,
+      required String bindingCode}) async {
+    var payload = Map()
+      ..addAll({
+        'client_id': this.clientId,
+        'client_secret': this.clientSecret,
+        'grant_type': 'http://auth0.com/oauth/grant-type/mfa-oob',
+        'mfa_token': mfaToken,
+        'oob_code': oobCode,
+        'binding_code': bindingCode
+      });
     Response res = await _dioWrapper.post('/oauth/token', body: payload);
     Auth0User user = Auth0User.fromMap(res.data);
     return user;
@@ -170,8 +182,8 @@ class Auth0Client {
   /// Return user information using an access token
   /// Param [String] token user's access token
   /// Returns [Future] with user info
-  Future<dynamic> getUserInfo() async {
-    var res = await _dioWrapper.get('/userinfo');
+  Future<dynamic> getUserInfo(dynamic params) async {
+    var res = await _dioWrapper.get('/userinfo', params: params);
     return res.data;
   }
 
@@ -249,24 +261,75 @@ class Auth0Client {
     return res.data;
   }
 
-  /// Exchanges a code obtained from SignIn-with-Apple social login for the user's tokens
-  /// @param subjectToken the auth code token issued by Sign-in-with-Apple service
-  /// @param scope the scopes requested for the issued tokens. e.g. openid profile
-  /// @returns a [Future] with userInfo
-  /// [ref link]: https://auth0.com/docs/api-auth/grant/authorization-code-pkce
-  Future<Auth0User> exchangeAppleAuthCode(
-      {required String subjectToken, required String scope}) async {
-    var payload = {
+  Future<dynamic> getAuthenticators(String token) async {
+    var res = await _dioWrapper.get('/mfa/authenticators',
+        headers: {'authorization': 'Bearer ${token}'});
+    return res.data;
+  }
+
+  Future<dynamic> delAuthenticator(
+      {required String token, required String authId}) async {
+    var res = await _dioWrapper.delete('/mfa/authenticators/${authId}',
+        headers: {'authorization': 'Bearer ${token}'});
+    return res.data;
+  }
+
+  Future<dynamic> mfaAssociateRequest(
+      {required String token, required dynamic params}) async {
+    assert(params['authenticator_types'] != null &&
+        params['oob_channels'] != null &&
+        params['phone_number'] != null);
+    var res = await _dioWrapper.post('/mfa/associate',
+        body: params, headers: {'authorization': 'Bearer ${token}'});
+    return res.data;
+  }
+
+  Future<dynamic> mfaChallenge(
+      {required String mfaToken,
+      required String challengeType,
+      required String authenticatorId}) async {
+    var res = await _dioWrapper.post('/mfa/challenge', body: {
+      'mfa_token': mfaToken,
       'client_id': this.clientId,
-      'subject_token': subjectToken,
-      "scope": scope,
-      "grant_type": 'urn:ietf:params:oauth:grant-type:token-exchange',
-      "subject_token_type":
-          'http://auth0.com/oauth/token-type/apple-authz-code',
-    };
-    var res = await _dioWrapper.post('/oauth/token', body: payload);
-    Auth0User user = Auth0User.fromMap(res.data);
-    return user;
+      'client_secret': this.clientSecret,
+      'challenge_type': challengeType,
+      'authenticator_id': authenticatorId
+    });
+    return res.data;
+  }
+
+  Future<dynamic> updateUser(
+      {required String id,
+      required String token,
+      required dynamic metadata}) async {
+    var res = await _dioWrapper.patch('/api/v2/users/${id}', body: {
+      'user_metadata': metadata,
+    }, headers: {
+      'authorization': 'Bearer ${token}'
+    });
+    return res.data;
+  }
+
+  Future<dynamic> getUser({required String id, required String token}) async {
+    var res = await _dioWrapper.get('/api/v2/users/${id}',
+        headers: {'authorization': 'Bearer ${token}'});
+    return res.data;
+  }
+
+  // TODO
+  Future<dynamic> linkUserAccount(dynamic params) async {
+    assert(params['userId'] != null);
+    var payload = Map.from(params)
+      ..addAll({
+        'client_id': this.clientId,
+        'client_secret': this.clientSecret,
+      });
+    //         "provider": "auth0",
+    //         "connection_id": "con_E33uffwMkSZbHl9V",
+    //         "user_id": "auth0|63aedc065ade362990d1e091"
+    var res = await _dioWrapper.post('/api/v2/users/${params['userId']}',
+        body: payload);
+    return res.data;
   }
 
   /// Makes logout API call

@@ -4,9 +4,12 @@ part of auth0;
 class AuthException implements Exception {
   final String name;
   final String description;
+  final String? optional;
 
   AuthException(
-      {this.name = 'a0.response.invalid', this.description = 'unknown error'});
+      {this.name = 'a0.response.invalid',
+      this.description = 'unknown error',
+      this.optional});
 
   @override
   String toString() {

@@ -13,7 +13,8 @@ void handleError(DioError error, JsonDecoder _decoder) {
       var desc = error.response!.data["error_description"] ??
           error.response!.data["message"] ??
           error.response!.data["description"];
-      throw AuthException(name: err, description: desc);
+      var optional = error.response!.data['mfa_token'] ?? '';
+      throw AuthException(name: err, description: desc, optional: optional);
     } else
       throw AuthException(description: error.error.toString());
   }
