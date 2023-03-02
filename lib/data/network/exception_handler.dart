@@ -9,11 +9,11 @@ void handleError(DioError error, JsonDecoder _decoder) {
     throw SocketException(error.toString());
   } else {
     if (error.response != null) {
-      var err = error.response!.data["error"] ?? error.response!.data['name'];
+      var err = error.response?.data["error"] ?? error.response?.data['name'];
       var desc = error.response!.data["error_description"] ??
-          error.response!.data["message"] ??
-          error.response!.data["description"];
-      var optional = error.response!.data['mfa_token'] ?? '';
+          error.response?.data["message"] ??
+          error.response?.data["description"];
+      var optional = error.response?.data?['mfa_token'] ?? null;
       throw AuthException(name: err, description: desc, optional: optional);
     } else
       throw AuthException(description: error.error.toString());
