@@ -298,40 +298,6 @@ class Auth0Client {
     return res.data;
   }
 
-  Future<dynamic> updateUser(
-      {required String id,
-      required String token,
-      required dynamic metadata}) async {
-    var res = await _dioWrapper.patch('/api/v2/users/${id}', body: {
-      'user_metadata': metadata,
-    }, headers: {
-      'authorization': 'Bearer ${token}'
-    });
-    return res.data;
-  }
-
-  Future<dynamic> getUser({required String id, required String token}) async {
-    var res = await _dioWrapper.get('/api/v2/users/${id}',
-        headers: {'authorization': 'Bearer ${token}'});
-    return res.data;
-  }
-
-  // TODO
-  Future<dynamic> linkUserAccount(dynamic params) async {
-    assert(params['userId'] != null);
-    var payload = Map.from(params)
-      ..addAll({
-        'client_id': this.clientId,
-        'client_secret': this.clientSecret,
-      });
-    //         "provider": "auth0",
-    //         "connection_id": "con_E33uffwMkSZbHl9V",
-    //         "user_id": "auth0|63aedc065ade362990d1e091"
-    var res = await _dioWrapper.post('/api/v2/users/${params['userId']}',
-        body: payload);
-    return res.data;
-  }
-
   /// Makes logout API call
   /// @returns a [Future]
   /// [ref link]: https://auth0.com/docs/api/authentication#logout
