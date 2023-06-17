@@ -9,8 +9,11 @@ void handleError(DioError error, JsonDecoder _decoder) {
     throw SocketException(error.toString());
   } else {
     if (error.response != null) {
+      if (error.response?.statusCode == 401) {
+        throw AuthException(name: 'unauthorized');
+      }
       var err = error.response?.data["error"] ?? error.response?.data['name'];
-      var desc = error.response!.data["error_description"] ??
+      var desc = error.response?.data["error_description"] ??
           error.response?.data["message"] ??
           error.response?.data["description"];
       var optional = error.response?.data?['mfa_token'] ?? null;
