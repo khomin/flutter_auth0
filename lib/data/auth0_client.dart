@@ -6,9 +6,9 @@ class Auth0Client {
   final String clientSecret;
   final String domain;
 
-  final int connectTimeout;
-  final int sendTimeout;
-  final int receiveTimeout;
+  final Duration connectTimeout;
+  final Duration sendTimeout;
+  final Duration receiveTimeout;
   final bool useLoggerInterceptor;
 
   Auth0Client(

@@ -7,8 +7,8 @@ class DioWrapper {
   late String host;
   late String scheme;
 
-  void configure(String baseUrl, int connectTimeout, int sendTimeout,
-      int receiveTimeout, String accessToken, Auth0Client auth0client,
+  void configure(String baseUrl, Duration connectTimeout, Duration sendTimeout,
+      Duration receiveTimeout, String accessToken, Auth0Client auth0client,
       {bool useLoggerInterceptor = false}) {
     var parsed = Uri.parse(baseUrl);
     scheme = parsed.scheme;
@@ -57,7 +57,7 @@ class DioWrapper {
   Future<Response> get(String url,
       {Map<String, dynamic>? params, Map<String, dynamic>? headers}) async {
     if (headers != null) {
-      dio.options?.headers.addAll(headers);
+      dio.options.headers.addAll(headers);
     }
     return await dio
         .get(url, queryParameters: params)
@@ -72,7 +72,7 @@ class DioWrapper {
   Future<Response> post(String url,
       {body, Map<String, dynamic>? headers}) async {
     if (headers != null) {
-      dio.options?.headers.addAll(headers);
+      dio.options.headers.addAll(headers);
     }
     return await dio.post(url, data: body).then((response) {
       return response;
@@ -86,7 +86,7 @@ class DioWrapper {
   Future<Response> patch(String url,
       {body, Map<String, dynamic>? headers}) async {
     if (headers != null) {
-      dio.options?.headers.addAll(headers);
+      dio.options.headers.addAll(headers);
     }
     return await dio.patch(url, data: body).then((response) {
       return response;
@@ -100,7 +100,7 @@ class DioWrapper {
   Future<Response> delete(String url,
       {Map<String, dynamic>? params, Map<String, dynamic>? headers}) async {
     if (headers != null) {
-      dio.options?.headers.addAll(headers);
+      dio.options.headers.addAll(headers);
     }
     return await dio
         .delete(url, queryParameters: params)

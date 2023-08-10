@@ -2,10 +2,10 @@ part of auth0;
 
 void handleError(DioError error, JsonDecoder _decoder) {
   if (error.error is SocketException)
-    throw error.error;
+    throw error.error!;
   else if (error.type == DioErrorType.receiveTimeout ||
       error.type == DioErrorType.sendTimeout ||
-      error.type == DioErrorType.connectTimeout) {
+      error.type == DioErrorType.connectionTimeout) {
     throw SocketException(error.toString());
   } else {
     if (error.response != null) {
