@@ -143,24 +143,6 @@ class Auth0Client {
     return user;
   }
 
-  Future<Auth0User> verifyWithMfa(
-      {required String mfaToken,
-      required String oobCode,
-      required String bindingCode}) async {
-    var payload = Map()
-      ..addAll({
-        'client_id': this.clientId,
-        'client_secret': this.clientSecret,
-        'grant_type': 'http://auth0.com/oauth/grant-type/mfa-oob',
-        'mfa_token': mfaToken,
-        'oob_code': oobCode,
-        'binding_code': bindingCode
-      });
-    Response res = await _dioWrapper.post('/oauth/token', body: payload);
-    Auth0User user = Auth0User.fromMap(res.data);
-    return user;
-  }
-
   /// Obtain new tokens using the Refresh Token obtained during Auth (requesting offline_access scope)
   /// @param [Object] params refresh token params
   /// @param [String] params.refreshToken user's issued refresh token
@@ -261,6 +243,18 @@ class Auth0Client {
     return res.data;
   }
 
+  /// Makes logout API call
+  /// @returns a [Future]
+  /// [ref link]: https://auth0.com/docs/api/authentication#logout
+  Future<dynamic> logout() async {
+    Map<String, dynamic> params = Map<String, dynamic>();
+    params['auth0Client'] = _dioWrapper.encodedTelemetry();
+    var res = await _dioWrapper.get('/v2/logout', params: params);
+    return res.data;
+  }
+
+  // To get a list of the authenticators for a user
+  /// @returns a [Future]
   Future<dynamic> getAuthenticators(String token) async {
     var res = await _dioWrapper.get('/mfa/authenticators',
         headers: {'authorization': 'Bearer ${token}'});
@@ -298,13 +292,21 @@ class Auth0Client {
     return res.data;
   }
 
-  /// Makes logout API call
-  /// @returns a [Future]
-  /// [ref link]: https://auth0.com/docs/api/authentication#logout
-  Future<dynamic> logout() async {
-    Map<String, dynamic> params = Map<String, dynamic>();
-    params['auth0Client'] = _dioWrapper.encodedTelemetry();
-    var res = await _dioWrapper.get('/v2/logout', params: params);
-    return res.data;
+  Future<Auth0User> verifyWithMfa(
+      {required String mfaToken,
+      required String oobCode,
+      required String bindingCode}) async {
+    var payload = Map()
+      ..addAll({
+        'client_id': this.clientId,
+        'client_secret': this.clientSecret,
+        'grant_type': 'http://auth0.com/oauth/grant-type/mfa-oob',
+        'mfa_token': mfaToken,
+        'oob_code': oobCode,
+        'binding_code': bindingCode
+      });
+    Response res = await _dioWrapper.post('/oauth/token', body: payload);
+    Auth0User user = Auth0User.fromMap(res.data);
+    return user;
   }
 }

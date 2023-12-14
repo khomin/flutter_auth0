@@ -63,7 +63,7 @@ class DioWrapper {
         .get(url, queryParameters: params)
         .then((response) => response)
         .catchError((error) {
-      handleError(error, _decoder);
+      return handleError(error, _decoder);
     });
   }
 
@@ -77,7 +77,7 @@ class DioWrapper {
     return await dio.post(url, data: body).then((response) {
       return response;
     }).catchError((error) {
-      handleError(error, _decoder);
+      return handleError(error, _decoder);
     });
   }
 
@@ -91,7 +91,7 @@ class DioWrapper {
     return await dio.patch(url, data: body).then((response) {
       return response;
     }).catchError((error) {
-      handleError(error, _decoder);
+      return handleError(error, _decoder);
     });
   }
 
@@ -106,7 +106,7 @@ class DioWrapper {
         .delete(url, queryParameters: params)
         .then((response) => response)
         .catchError((error) {
-      handleError(error, _decoder);
+      return handleError(error, _decoder);
     });
   }
 }

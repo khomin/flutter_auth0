@@ -1,11 +1,11 @@
 part of auth0;
 
-void handleError(DioError error, JsonDecoder _decoder) {
+Future<Response> handleError(DioException error, JsonDecoder _decoder) {
   if (error.error is SocketException)
-    throw error.error!;
-  else if (error.type == DioErrorType.receiveTimeout ||
-      error.type == DioErrorType.sendTimeout ||
-      error.type == DioErrorType.connectionTimeout) {
+    throw error.error ?? Object();
+  else if (error.type == DioExceptionType.receiveTimeout ||
+      error.type == DioExceptionType.sendTimeout ||
+      error.type == DioExceptionType.connectionTimeout) {
     throw SocketException(error.toString());
   } else {
     if (error.response != null) {
